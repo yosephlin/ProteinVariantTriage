@@ -31,7 +31,6 @@ AA_CLASSES = {
 BINDING_MODE_ALIASES = {
     "robust": "robust",
     "direct_ligand": "direct_ligand",
-    "direct_mtx": "direct_ligand",  # backward-compatible alias
     "cofactor_coupled": "cofactor_coupled",
 }
 
@@ -312,13 +311,9 @@ def main() -> int:
     ap.add_argument("--exploit-frac", type=float, default=0.70)
     ap.add_argument(
         "--binding-mode",
-        choices=["robust", "direct_ligand", "direct_mtx", "cofactor_coupled"],
+        choices=["robust", "direct_ligand", "cofactor_coupled"],
         default="robust",
-        help=(
-            "Interpret p_bind as robust blend, direct ligand-focused binary context, "
-            "or cofactor-coupled ternary context. "
-            "'direct_mtx' is accepted as a backward-compatible alias."
-        ),
+        help="Interpret p_bind as robust blend, direct ligand-focused binary context, or cofactor-coupled ternary context.",
     )
     ap.add_argument("--min-binding", type=float, default=0.0)
     ap.add_argument("--min-stability", type=float, default=0.0)

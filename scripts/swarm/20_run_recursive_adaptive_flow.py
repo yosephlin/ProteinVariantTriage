@@ -1004,12 +1004,9 @@ def main() -> int:
     ap.add_argument("--binding-cnn-model", default="fast")
     ap.add_argument(
         "--binding-mode",
-        choices=["robust", "direct_ligand", "direct_mtx", "cofactor_coupled"],
+        choices=["robust", "direct_ligand", "cofactor_coupled"],
         default="robust",
-        help=(
-            "Binding interpretation mode for panel selection. "
-            "'direct_mtx' is retained as a backward-compatible alias of 'direct_ligand'."
-        ),
+        help="Binding interpretation mode for panel selection.",
     )
     ap.add_argument("--binding-context", choices=["auto", "single", "dual"], default="auto")
     ap.add_argument("--binding-wt-pdb-binary", default=None)

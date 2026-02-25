@@ -678,7 +678,6 @@ def main() -> int:
     ap.add_argument("--out", default=None, help="Default: overwrite proposals file in-place")
     ap.add_argument("--summary", default=None, help="Default: OUTDIR/swarm/binding_fastdl_summary_rK.json")
 
-    ap.add_argument("--wt-pdb", default=None, help="Legacy alias for --wt-pdb-binary.")
     ap.add_argument("--wt-pdb-binary", default=None, help="Binary context receptor (no cofactor); default OUTDIR/reference_protein.pdb")
     ap.add_argument("--wt-pdb-ternary", default=None, help="Ternary context receptor (cofactor-present). Optional.")
     ap.add_argument(
@@ -755,7 +754,7 @@ def main() -> int:
     wt_pdb_binary = (
         Path(args.wt_pdb_binary).resolve()
         if args.wt_pdb_binary
-        else (Path(args.wt_pdb).resolve() if args.wt_pdb else (outdir / "reference_protein.pdb").resolve())
+        else (outdir / "reference_protein.pdb").resolve()
     )
     if not wt_pdb_binary.exists():
         raise SystemExit(f"Binary WT PDB not found: {wt_pdb_binary}")
