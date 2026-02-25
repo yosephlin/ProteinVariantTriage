@@ -1,0 +1,51 @@
+SYSTEM:
+You are a protein annotation compressor. Convert messy structured API outputs into a compact, mutation-relevant context pack.
+Rules:
+- Preserve residue numbering and ranges exactly.
+- Output ONLY JSON conforming to the schema.
+- Prefer hard constraints (active site, disulfide, metal-binding, motifs, domains, TM regions).
+- Include ligand/drug context if present (names, identifiers, potency summary).
+- Do not speculate.
+
+USER:
+Build a context pack for this protein.
+
+INPUT_JSON:
+{{
+  "uniprot": {{...}},
+  "interpro": {{...}},
+  "alphafold": {{...}},
+  "pdb_rcsb": {{...}},
+  "pdbe": {{...}},
+  "chembl": {{...}},
+  "pubchem": {{...}},
+  "string": {{...}}
+}}
+
+OUTPUT_SCHEMA (must match):
+{{
+  "protein_id": "...",
+  "sequence_length": int,
+  "organism": "...",
+  "domains": [{{"name":"...","start":int,"end":int,"source":"InterPro/Pfam/..."}}, ...],
+  "hard_constraints": {{
+    "active_site_residues": [int,...],
+    "binding_site_residues": [int,...],
+    "metal_binding_residues": [int,...],
+    "disulfide_pairs": [[int,int],...],
+    "ptm_residues": [{{"pos":int,"type":"..."}}...],
+    "transmembrane_regions": [[int,int],...],
+    "signal_peptide_regions": [[int,int],...],
+    "motifs": [{{"name":"...","start":int,"end":int}}...]
+  }},
+  "ligand_context": {{
+    "known_ligands": [{{"name":"...","id":"...","source":"ChEMBL/PDB/PubChem","notes":"..."}}...],
+    "bioactivity_summary": [{{"ligand":"...","best_potency":"...","assay_confidence":"...","notes":"..."}}...]
+  }},
+  "structure_context": {{
+    "best_structure_source":"PDB/AlphaFold",
+    "structure_ids":[...],
+    "confidence_notes":"..."
+  }},
+  "keywords": ["...", ...]
+}}
