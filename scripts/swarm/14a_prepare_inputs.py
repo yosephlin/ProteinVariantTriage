@@ -457,6 +457,17 @@ def _rdkit_available() -> bool:
         return False
 
 
+def _write_rdkit_sdf_no_kekulize(mol, out_sdf: Path) -> None:
+    from rdkit import Chem
+
+    block = Chem.MolToMolBlock(mol, kekulize=False)
+    with open(out_sdf, "w") as fh:
+        fh.write(block)
+        for prop in mol.GetPropNames():
+            fh.write(f">  <{prop}>\n{mol.GetProp(prop)}\n\n")
+        fh.write("$$$$\n")
+
+
 def _smiles_to_sdf(smiles: str, out_sdf: Path) -> None:
     smi = str(smiles or "").strip()
     if not smi:
@@ -480,9 +491,7 @@ def _smiles_to_sdf(smiles: str, out_sdf: Path) -> None:
             except Exception:
                 pass
         mol = Chem.RemoveHs(mol)
-        w = Chem.SDWriter(str(out_sdf))
-        w.write(mol)
-        w.close()
+        _write_rdkit_sdf_no_kekulize(mol, out_sdf)
         return
 
     if not shutil.which("obabel"):
@@ -528,9 +537,7 @@ def _convert_ligand_to_sdf(src: Path, out_sdf: Path) -> None:
                     mol = Chem.RemoveHs(mol)
                 except Exception:
                     pass
-            w = Chem.SDWriter(str(out_sdf))
-            w.write(mol)
-            w.close()
+            _write_rdkit_sdf_no_kekulize(mol, out_sdf)
             return
 
     if not shutil.which("obabel"):
