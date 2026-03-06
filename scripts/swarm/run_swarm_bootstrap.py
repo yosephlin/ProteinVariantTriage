@@ -125,6 +125,12 @@ def main() -> int:
     ap.add_argument("--cpu-embeddings", action=argparse.BooleanOptionalAction, default=True)
     ap.add_argument("--gpu-embeddings", dest="cpu_embeddings", action="store_false")
     ap.add_argument("--with-janus-final", action="store_true", default=False)
+    ap.add_argument(
+        "--artifact-mode",
+        choices=["full", "minimal"],
+        default="minimal",
+        help="full: keep all intermediate artifacts; minimal: keep only core final outputs.",
+    )
     ap.add_argument("--janus-cmd", default=None)
     ap.add_argument("--janus-repo", default=None)
     ap.add_argument("--fast-binding-check", action=argparse.BooleanOptionalAction, default=True)
@@ -320,6 +326,7 @@ def main() -> int:
             "--binding-progress-every", str(max(1, int(args.binding_progress_every))),
             "--binding-relax-max-iterations", str(max(1, int(args.binding_relax_max_iterations))),
             "--binding-relax-heavy-restraint-k", str(float(args.binding_relax_heavy_restraint_k)),
+            "--artifact-mode", str(args.artifact_mode),
         ]
         if args.focus_round is not None:
             recursive_cmd += ["--focus-round", str(int(args.focus_round))]

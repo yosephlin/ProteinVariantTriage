@@ -307,8 +307,14 @@ def main() -> int:
     ap.add_argument("--total", type=int, default=200)
     ap.add_argument("--tau-func-green", type=float, default=0.70)
     ap.add_argument("--tau-func-amber", type=float, default=0.45)
-    ap.add_argument("--max-per-position", type=int, default=4)
-    ap.add_argument("--exploit-frac", type=float, default=0.70)
+    ap.add_argument("--max-per-position", type=int, default=3)
+    ap.add_argument("--exploit-frac", type=float, default=0.60)
+    ap.add_argument(
+        "--exploit-min-func",
+        type=float,
+        default=0.60,
+        help="Minimum p_func preferred in exploit lane (softened by fallback/topups).",
+    )
     ap.add_argument(
         "--binding-mode",
         choices=["robust", "direct_ligand", "cofactor_coupled"],
@@ -327,19 +333,19 @@ def main() -> int:
     ap.add_argument(
         "--enable-functional-binding-challenger",
         action=argparse.BooleanOptionalAction,
-        default=False,
+        default=True,
         help="Allow uncertain functional hypotheses to bypass strict early binding floors.",
     )
     ap.add_argument(
         "--binding-challenger-frac",
         type=float,
-        default=0.0,
+        default=0.12,
         help="Max fraction of target panel admitted as functional binding challengers.",
     )
     ap.add_argument(
         "--binding-challenger-min",
         type=int,
-        default=0,
+        default=2,
         help="Minimum number of functional binding challengers to retain when available.",
     )
     ap.add_argument(
@@ -369,35 +375,39 @@ def main() -> int:
     ap.add_argument(
         "--binding-challenger-min-func",
         type=float,
-        default=0.20,
+        default=0.35,
         help="Minimum functional score for challenger admission.",
     )
 
-    ap.add_argument("--w-bind", type=float, default=0.45)
-    ap.add_argument("--w-func", type=float, default=0.25)
-    ap.add_argument("--w-stability", type=float, default=0.18)
-    ap.add_argument("--w-plausibility", type=float, default=0.05)
-    ap.add_argument("--w-novel", type=float, default=0.07)
+    ap.add_argument("--w-bind", type=float, default=0.30)
+    ap.add_argument("--w-func", type=float, default=0.35)
+    ap.add_argument("--w-stability", type=float, default=0.20)
+    ap.add_argument("--w-plausibility", type=float, default=0.10)
+    ap.add_argument("--w-novel", type=float, default=0.05)
     ap.add_argument("--enable-red-rescue", action=argparse.BooleanOptionalAction, default=True,
                     help="Allow rescue of red-band variants when binding evidence is strong.")
     ap.add_argument("--red-rescue-min-binding", type=float, default=0.70)
     ap.add_argument("--red-rescue-min-func", type=float, default=0.35)
 
-    ap.add_argument("--mmr-exploit", type=float, default=0.88)
-    ap.add_argument("--mmr-explore", type=float, default=0.62)
+    ap.add_argument("--mmr-exploit", type=float, default=0.82)
+    ap.add_argument("--mmr-explore", type=float, default=0.58)
+    ap.add_argument("--mmr-repeat-penalty", type=float, default=0.04,
+                    help="Penalty per already-selected occupancy for candidate positions during MMR.")
+    ap.add_argument("--explore-new-position-bonus", type=float, default=0.05,
+                    help="Exploration bonus when candidate introduces at least one new position.")
     ap.add_argument("--prolif-threshold", type=float, default=0.18)
     ap.add_argument("--min-prolif-selected", type=int, default=8)
     ap.add_argument("--binding-focus-threshold", type=float, default=0.55)
     ap.add_argument("--min-binding-focused-selected", type=int, default=10)
-    ap.add_argument("--min-functional-selected", type=int, default=4)
-    ap.add_argument("--min-binding-challenger-selected", type=int, default=0)
-    ap.add_argument("--chemistry-challenger-frac", type=float, default=0.0)
-    ap.add_argument("--chemistry-challenger-min", type=int, default=0)
-    ap.add_argument("--chemistry-challenger-max", type=int, default=24)
+    ap.add_argument("--min-functional-selected", type=int, default=8)
+    ap.add_argument("--min-binding-challenger-selected", type=int, default=2)
+    ap.add_argument("--chemistry-challenger-frac", type=float, default=0.08)
+    ap.add_argument("--chemistry-challenger-min", type=int, default=1)
+    ap.add_argument("--chemistry-challenger-max", type=int, default=16)
     ap.add_argument("--chemistry-challenger-min-binding", type=float, default=0.01)
     ap.add_argument("--chemistry-challenger-uncertainty-min", type=float, default=0.05)
     ap.add_argument("--chemistry-challenger-max-signal", type=float, default=0.55)
-    ap.add_argument("--min-chemistry-challenger-selected", type=int, default=0)
+    ap.add_argument("--min-chemistry-challenger-selected", type=int, default=1)
     args = ap.parse_args()
 
     outdir = Path(args.outdir)
@@ -738,10 +748,13 @@ def main() -> int:
     means = np.mean(mat, axis=0)
     stds = np.std(mat, axis=0) + 1e-6
 
+    exploit_min_func = clamp(float(args.exploit_min_func), 0.0, 1.0)
     for x in prepared:
         vals = np.array([safe_float(x.get(k), 0.0) for k in comp_names], dtype=float)
         z = (vals - means) / stds
         utility = float(np.dot(base_w, z))
+        p_bind_val = safe_float(x.get("p_bind"), 0.0)
+        p_func_val = safe_float(x.get("p_func"), 0.0)
         soft = {str(s or "").upper() for s in (x.get("soft_constraints") or [])}
         hard = {str(s or "").upper() for s in (x.get("hard_constraints") or [])}
         if "SIGNAL" in soft:
@@ -764,6 +777,10 @@ def main() -> int:
             utility += 0.05
             utility += 0.04 * safe_float(x.get("acq_uncertainty"), 0.0)
             utility += 0.02 * (1.0 - safe_float(x.get("p_func"), 0.0))
+        if p_bind_val >= 0.80 and p_func_val < exploit_min_func:
+            utility -= 0.10
+        if p_func_val >= exploit_min_func:
+            utility += 0.04
         utility += 0.05 * safe_float(x.get("acq_uncertainty"), 0.0)
         x["utility"] = round(float(utility), 6)
 
@@ -847,14 +864,20 @@ def main() -> int:
                 vid = item["variant_id"]
                 if vid in selected_ids:
                     continue
+                if lane == "exploit" and safe_float(item.get("p_func"), 0.0) < exploit_min_func:
+                    continue
                 if not fits_caps(item):
                     continue
+                cps = [tuple(cp) for cp in item.get("_chain_positions", [])]
                 vec = vectors[vid]
                 if selected:
                     sim = max(cosine_similarity(vec, vectors[s["variant_id"]]) for s in selected)
                 else:
                     sim = 0.0
                 mmr = lam * item["utility"] + (1.0 - lam) * (1.0 - sim)
+                if cps:
+                    repeat_load = float(np.mean([pos_sel.get(cp, 0) for cp in cps]))
+                    mmr -= float(max(0.0, args.mmr_repeat_penalty)) * repeat_load
                 if lane == "explore" and item["gate_band"] == "amber":
                     mmr += 0.04
                 if lane == "explore" and item["gate_band"] == "red":
@@ -871,6 +894,8 @@ def main() -> int:
                     mmr += 0.04
                 if lane == "explore":
                     mmr += 0.03 * safe_float(item.get("acq_uncertainty"), 0.0)
+                    if cps and any(pos_sel.get(cp, 0) == 0 for cp in cps):
+                        mmr += float(max(0.0, args.explore_new_position_bonus))
                 if mmr > best_score:
                     best_score = mmr
                     best = item
@@ -1238,6 +1263,7 @@ def main() -> int:
         "qualified_binding_focused": sum(1 for x in prepared if safe_float(x.get("p_bind"), 0.0) >= bind_focus_thr),
         "selected_binding_focused": sum(1 for x in selected if safe_float(x.get("p_bind"), 0.0) >= bind_focus_thr),
         "binding_focus_threshold": bind_focus_thr,
+        "exploit_min_func": float(exploit_min_func),
         "binding_challenger_pool_total": int(len(binding_challengers)),
         "binding_challenger_added": int(binding_challenger_added),
         "qualified_binding_challengers": sum(1 for x in prepared if bool(x.get("binding_challenger"))),
@@ -1280,6 +1306,8 @@ def main() -> int:
         "min_chemistry_challenger_selected": int(args.min_chemistry_challenger_selected),
         "red_rescued_total": int(red_rescued_total),
         "max_per_position": int(max_per_pos),
+        "mmr_repeat_penalty": float(max(0.0, args.mmr_repeat_penalty)),
+        "explore_new_position_bonus": float(max(0.0, args.explore_new_position_bonus)),
         "reject_counts": dict(reject_stats),
     }
 

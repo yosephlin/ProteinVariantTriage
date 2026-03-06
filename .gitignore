@@ -1,9 +1,43 @@
-/data
-/boltz
-/PSnpBind-ML-notebook
-/gnina
-/.vscode
-/__pycache__
-check_ground_truth_hits.py
+# Generated data and local tool workdirs
+/data/
+/boltz/
+/PSnpBind-ML-notebook/
+/gnina/
+/openbabel/
+
+# Nested repo metadata for vendored/local clones
+/JanusDDG/.git/
+/VespaG/.git/
+/boltz/.git/
+/PSnpBind-ML-notebook/.git/
+/gnina/.git/
+/openbabel/.git/
+
+# Editor and notebook state
+/.vscode/
+/.ipynb_checkpoints/
+
+# Python caches and local environments
+/__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+.venv/
+venv/
+
+# OS cruft
+.DS_Store
+Thumbs.db
+
+# Local installers, binaries, and one-off helpers
 Miniconda3-latest-Linux-x86_64.sh
 gnina.1.3.2
+check_ground_truth_hits.py
+
+# Misc local scratch
+*.log
+*.tmp
+*.bak
