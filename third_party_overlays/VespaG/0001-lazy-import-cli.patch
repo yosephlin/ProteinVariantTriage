@@ -1,0 +1,53 @@
+diff --git a/vespag/__main__.py b/vespag/__main__.py
+index fc987d4..af11b9d 100644
+--- a/vespag/__main__.py
++++ b/vespag/__main__.py
+@@ -3,15 +3,16 @@ from typing import Annotated
+ 
+ import typer
+ 
+-from .data.embeddings import generate_embeddings
+-from .eval import eval
+-from .predict import generate_predictions
+-from .training.train import train as run_training
+ from .utils.type_hinting import EmbeddingType
+ 
+ app = typer.Typer()
+ 
+-app.add_typer(eval.app, name="eval")
++try:
++    from .eval import eval as eval_app
++except Exception:
++    eval_app = None
++else:
++    app.add_typer(eval_app.app, name="eval")
+ 
+ 
+ @app.command()
+@@ -81,6 +82,8 @@ def predict(
+         typer.Option("--embedding-type", help="Type of pLM used for generating embeddings"),
+     ] = EmbeddingType.esm2,
+ ) -> None:
++    from .predict import generate_predictions
++
+     generate_predictions(
+         fasta_file=fasta_file,
+         output_path=output_path,
+@@ -117,6 +120,8 @@ def embed(
+         typer.Option("--pretrained-path", help="Path or URL of pretrained transformer"),
+     ] = None,
+ ):
++    from .data.embeddings import generate_embeddings
++
+     generate_embeddings(input_fasta_file, output_h5_file, cache_dir, embedding_type, pretrained_path)
+ 
+ 
+@@ -132,6 +137,8 @@ def train(
+     limit_cache: Annotated[bool, typer.Option("--limit-cache")] = False,
+     use_full_dataset: Annotated[bool, typer.Option("--use-full-dataset")] = False,
+ ):
++    from .training.train import train as run_training
++
+     run_training(
+         model_config_key=model_config_key,
+         datasets=datasets,

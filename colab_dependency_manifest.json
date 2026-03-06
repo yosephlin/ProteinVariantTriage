@@ -1,0 +1,20 @@
+{
+  "dependencies": {
+    "VespaG": {
+      "path": "VespaG",
+      "url": "https://github.com/JSchlensok/VespaG.git",
+      "ref": "05a021674c1a1626d4deeedf3741e99e79de6464",
+      "lfs": false,
+      "patches": [
+        "third_party_overlays/VespaG/0001-lazy-import-cli.patch"
+      ]
+    },
+    "JanusDDG": {
+      "path": "JanusDDG",
+      "url": "https://github.com/compbiomed-unito/JanusDDG.git",
+      "ref": "7ef53fde72c9b9b715b0a9f2f80910ebf927bd59",
+      "lfs": false,
+      "patches": []
+    }
+  }
+}
