@@ -6,7 +6,8 @@
       "ref": "05a021674c1a1626d4deeedf3741e99e79de6464",
       "lfs": false,
       "patches": [
-        "third_party_overlays/VespaG/0001-lazy-import-cli.patch"
+        "third_party_overlays/VespaG/0001-lazy-import-cli.patch",
+        "third_party_overlays/VespaG/0002-transformers-tokenizer-compat.patch"
       ]
     },
     "JanusDDG": {

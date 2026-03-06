@@ -1,0 +1,25 @@
+diff --git a/vespag/data/embeddings.py b/vespag/data/embeddings.py
+index a677298..3fb4aee 100644
+--- a/vespag/data/embeddings.py
++++ b/vespag/data/embeddings.py
+@@ -73,13 +73,18 @@ class Embedder:
+             embedding_progress = pbar.add_task("Computing embeddings", total=sum(map(len, sequences.values())))
+             for batch in batches:
+                 input_sequences = [" ".join(list(re.sub(r"[UZOB]", "X", seq))) for seq in batch.values()]
+-                input_tokens = self.tokenizer.batch_encode_plus(
++                input_tokens = self.tokenizer(
+                     input_sequences,
+                     add_special_tokens=True,
+                     padding="longest",
+                     return_tensors="pt",
++                    truncation=True,
+                     max_length=max_batch_length,
+-                ).to(self.device)
++                )
++                if hasattr(input_tokens, "to"):
++                    input_tokens = input_tokens.to(self.device)
++                else:
++                    input_tokens = {k: v.to(self.device) for k, v in input_tokens.items()}
+                 raw_embeddings = self.encoder(**input_tokens)
+                 for i, (id, seq) in enumerate(batch.items()):
+                     emb = raw_embeddings.last_hidden_state[i, 1 : len(seq) + 1].detach().float().cpu()
