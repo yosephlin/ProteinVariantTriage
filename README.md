@@ -37,6 +37,7 @@ That notebook is designed to:
 - materialize pinned third-party dependencies
 - install the minimal runtime stack needed for the SWARM path
 - auto-tune some GPU-sensitive defaults for Colab
+- run final Janus inside the recursive SWARM pass so minimal-artifact mode can prune round-local panels safely
 
 ## Colab Quick Start
 
@@ -64,7 +65,11 @@ Run these cells first:
 3. `02 - Configuration`
 4. `03 - GPU Preflight + Auto-Tune`
 
-After that, continue with the notebook cells in order.
+Recommended single-pass Colab flow after bootstrap:
+
+5. `18-20 - Unified Single Recursive SWARM Loop`
+
+That Colab cell already includes final Janus. If you need to rerun or recover final Janus later, use `scripts/swarm/19e_run_final_janus.py` against an existing merged final panel.
 
 ### 4. What cell `00` now does
 
@@ -170,6 +175,13 @@ The Colab recursive SWARM cell also resolves GNINA explicitly:
 - then by downloading a pinned GNINA release asset when missing
 - with a CPU fallback when the CUDA build is unavailable in the runtime
 
+The Colab notebook now also treats final Janus differently from the older two-step flow:
+
+- `18-20` runs recursive SWARM with integrated final Janus
+- `artifact_mode=minimal` is still supported
+- round-local `swarm_panel_r*.tsv` files may be pruned after the integrated final Janus step
+- any later rerun/recovery should use `scripts/swarm/19e_run_final_janus.py` with `swarm_final_panel_production.tsv` or `swarm_final_panel.tsv`
+
 ## Repository Layout
 
 ```text
@@ -201,8 +213,11 @@ ProteinVariantTriage/
 │       ├── 20_run_recursive_adaptive_flow.py
 │       └── run_swarm_bootstrap.py
 └── third_party_overlays/
+    ├── JanusDDG/
+    │   └── 0001-resolve-model-path.patch
     └── VespaG/
-        └── 0001-lazy-import-cli.patch
+        ├── 0001-lazy-import-cli.patch
+        └── 0002-transformers-tokenizer-compat.patch
 ```
 
 ## Main SWARM Stages
