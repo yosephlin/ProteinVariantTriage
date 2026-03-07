@@ -1,0 +1,40 @@
+diff --git a/src/main.py b/src/main.py
+index c39ef3d..f4acab9 100644
+--- a/src/main.py
++++ b/src/main.py
+@@ -1,5 +1,6 @@
+ import os
+ import random
++from pathlib import Path
+ import torch
+ import numpy as np
+ import pandas as pd
+@@ -15,6 +16,19 @@ def main():
+     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+     print(f"Processing dataset: {args.df_path}")
+     print(f"Using device: {device}")
++    repo_root = Path(__file__).resolve().parents[1]
++    model_candidates = [
++        repo_root / "JanusDDG_fine_tuned.pth",
++        repo_root / "models" / "JanusDDG_fine_tuned.pth",
++        repo_root / "models" / "JanusDDG.pth",
++        repo_root / "JanusDDG.pth",
++    ]
++    model_path = next((p for p in model_candidates if p.exists()), None)
++    if model_path is None:
++        raise FileNotFoundError(
++            "Janus model checkpoint not found. Checked: "
++            + ", ".join(str(p) for p in model_candidates)
++        )
+ 
+     try:
+ 
+@@ -24,7 +38,7 @@ def main():
+         model_esm.eval()
+         
+         # Load pretrained model
+-        model = load_model('JanusDDG_fine_tuned.pth',device)
++        model = load_model(str(model_path), device)
+ 
+         # Process data and make predictions
+         pred_dir, pred_inv = process_and_predict(args.df_path, model,model_esm,batch_converter_esm, device)

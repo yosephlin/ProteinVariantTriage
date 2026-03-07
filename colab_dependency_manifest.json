@@ -15,7 +15,9 @@
       "url": "https://github.com/compbiomed-unito/JanusDDG.git",
       "ref": "7ef53fde72c9b9b715b0a9f2f80910ebf927bd59",
       "lfs": false,
-      "patches": []
+      "patches": [
+        "third_party_overlays/JanusDDG/0001-resolve-model-path.patch"
+      ]
     }
   }
 }

@@ -112,13 +112,20 @@ def _find_python_token_index(cmd: list[str]) -> int | None:
 
 def _build_python_preflight(cmd: list[str]) -> list[str] | None:
     """
-    Build a preflight command that validates `torch` import in the exact
+    Build a preflight command that validates Janus runtime imports in the exact
     interpreter context used by Janus invocation.
     """
     py_idx = _find_python_token_index(cmd)
     if py_idx is None:
         return None
-    return cmd[: py_idx + 1] + ["-c", "import sys, torch; print(sys.executable); print(torch.__version__)"]
+    return cmd[: py_idx + 1] + [
+        "-c",
+        (
+            "import sys, torch, esm, pandas, scipy, sklearn; "
+            "print(sys.executable); "
+            "print(torch.__version__)"
+        ),
+    ]
 
 
 def main() -> int:
@@ -183,8 +190,9 @@ def main() -> int:
             if p0.stderr:
                 print(p0.stderr)
             raise SystemExit(
-                "Janus preflight failed: unable to import torch in the target env. "
-                "Verify JANUS_ENV_NAME / conda path and install torch into that env."
+                "Janus preflight failed: target env cannot import one or more Janus "
+                "runtime dependencies (torch, esm, pandas, scipy, sklearn). "
+                "Verify JANUS_CMD / JANUS_REPO / env setup."
             )
         if p0.stdout:
             print(p0.stdout)
