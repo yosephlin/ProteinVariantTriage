@@ -155,10 +155,20 @@ Current pinned dependencies:
   - source: `https://github.com/compbiomed-unito/JanusDDG.git`
   - ref: `7ef53fde72c9b9b715b0a9f2f80910ebf927bd59`
 
-Current tracked overlay:
+Current tracked overlays:
 
 - `third_party_overlays/VespaG/0001-lazy-import-cli.patch`
   - makes the VespaG CLI import path lighter by deferring heavy imports in `vespag/__main__.py`
+- `third_party_overlays/VespaG/0002-transformers-tokenizer-compat.patch`
+  - updates VespaG embedding generation for current `transformers` tokenizer APIs used in Colab
+- `third_party_overlays/JanusDDG/0001-resolve-model-path.patch`
+  - makes JanusDDG resolve model checkpoints from `JanusDDG/models/` instead of assuming a repo-root checkpoint
+
+The Colab recursive SWARM cell also resolves GNINA explicitly:
+
+- first from config or `PATH`
+- then by downloading a pinned GNINA release asset when missing
+- with a CPU fallback when the CUDA build is unavailable in the runtime
 
 ## Repository Layout
 
