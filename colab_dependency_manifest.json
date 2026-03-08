@@ -16,7 +16,8 @@
       "ref": "7ef53fde72c9b9b715b0a9f2f80910ebf927bd59",
       "lfs": false,
       "patches": [
-        "third_party_overlays/JanusDDG/0001-resolve-model-path.patch"
+        "third_party_overlays/JanusDDG/0001-resolve-model-path.patch",
+        "third_party_overlays/JanusDDG/0002-torch-load-weights-only-compat.patch"
       ]
     }
   }
