@@ -33,11 +33,35 @@ def git_status_porcelain(repo_dir: Path) -> str:
     return proc.stdout.strip()
 
 
+def git_head(repo_dir: Path) -> str:
+    proc = subprocess.run(
+        ["git", "-C", str(repo_dir), "rev-parse", "HEAD"],
+        text=True,
+        capture_output=True,
+        check=True,
+    )
+    return proc.stdout.strip()
+
+
+def is_pinned_commit(ref: str) -> bool:
+    ref = ref.strip()
+    if len(ref) < 7:
+        return False
+    return all(c in "0123456789abcdefABCDEF" for c in ref)
+
+
 def clone_or_update_repo(repo_dir: Path, repo_url: str, git_ref: str) -> None:
     repo_dir.parent.mkdir(parents=True, exist_ok=True)
     if (repo_dir / ".git").exists():
         dirty = git_status_porcelain(repo_dir)
         if dirty:
+            if is_pinned_commit(git_ref):
+                head = git_head(repo_dir)
+                if head.startswith(git_ref.lower()) or git_ref.lower().startswith(head.lower()):
+                    print(
+                        f"{repo_dir.name}: reusing dirty dependency repo already pinned at {head[:12]}"
+                    )
+                    return
             raise RuntimeError(
                 f"Refusing to update dirty dependency repo: {repo_dir}\n"
                 "Commit or stash local changes first."
