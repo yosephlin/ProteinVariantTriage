@@ -1,8 +1,8 @@
 diff --git a/src/utils.py b/src/utils.py
-index 35a3180..96a2c36 100644
+index a8f6093..a8c8428 100755
 --- a/src/utils.py
 +++ b/src/utils.py
-@@ -314,7 +314,12 @@ def load_model(model_name, device):
+@@ -313,7 +313,12 @@ def load_model(model_name, device):
          raise FileNotFoundError(f"Model file {model_path} not found")
  
      # Load model and set to evaluation mode
@@ -15,3 +15,4 @@ index 35a3180..96a2c36 100644
 +        model = torch.load(model_path, map_location=device)
      model.eval()
      return model
+ 
