@@ -115,3 +115,31 @@ def final_with_janus_production_path(outdir: Path) -> Path:
 
 def final_with_janus_production_summary_path(outdir: Path) -> Path:
     return swarm_root(outdir) / "swarm_final_with_janus_production_summary.json"
+
+
+def minimal_af2_panel_path(outdir: Path) -> Path:
+    return swarm_root(outdir) / "swarm_minimal_af2_panel.tsv"
+
+
+def minimal_af2_panel_vespag_path(outdir: Path) -> Path:
+    return swarm_root(outdir) / "swarm_minimal_af2_panel_vespag.tsv"
+
+
+def minimal_af2_summary_path(outdir: Path) -> Path:
+    return swarm_root(outdir) / "swarm_minimal_af2_summary.json"
+
+
+def minimal_af2_candidates_path(outdir: Path) -> Path:
+    return swarm_root(outdir) / "swarm_minimal_af2_candidates.jsonl"
+
+
+def minimal_af2_vespag_mutation_csv_path(outdir: Path) -> Path:
+    return swarm_root(outdir) / "swarm_minimal_af2_vespag_mutations.csv"
+
+
+def minimal_af2_vespag_scores_csv_path(outdir: Path) -> Path:
+    return swarm_root(outdir) / "swarm_minimal_af2_vespag_scores.csv"
+
+
+def minimal_af2_vespag_summary_path(outdir: Path) -> Path:
+    return swarm_root(outdir) / "swarm_minimal_af2_vespag_summary.json"

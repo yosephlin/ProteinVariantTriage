@@ -816,6 +816,7 @@ def main() -> int:
     ligand_pdb_out = outdir / args.ligand_pdb_out
 
     warnings: List[str] = []
+    info_notes: List[str] = []
     protein_meta: Dict[str, object] = {}
     fasta_meta: Dict[str, object] = {}
     ligand_meta: Dict[str, object] = {}
@@ -897,7 +898,7 @@ def main() -> int:
     norm_stats = _normalize_protein_pdb(src_pdb, protein_out)
     protein_meta.update(norm_stats)
     if int(norm_stats.get("has_model_records", 0)) > 0:
-        warnings.append("Protein structure contained MODEL records; only the first model was retained.")
+        info_notes.append("Protein structure contained MODEL records; the canonical receptor retains only the first model.")
     pdb_seq_for_check, pdb_seq_chain = _sequence_from_pdb(protein_out, preferred_chain)
 
     # ---------- FASTA ----------
@@ -1122,6 +1123,7 @@ def main() -> int:
         "notes": [
             "Canonical receptor is normalized for fpocket/SWARM (first model, filtered altloc/hydrogen/water/non-protein HETATM).",
             "Canonical ligand is stored as ligand.sdf + ligand.pdb for downstream conversion/docking.",
+            *info_notes,
         ],
     }
     manifest_path = swarm_dir / "input_manifest.json"

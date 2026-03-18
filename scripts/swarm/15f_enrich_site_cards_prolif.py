@@ -1,6 +1,7 @@
 import argparse
 import json
 import re
+import warnings
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -102,20 +103,42 @@ def _collect_prolif_features(
     max_poses: int,
 ) -> Tuple[Dict[Tuple[str, int], Dict], int]:
     from rdkit import Chem
-    import prolif as plf
+    with warnings.catch_warnings():
+        # Benign upstream dependency noise from current ProLIF/MDAnalysis versions.
+        warnings.filterwarnings(
+            "ignore",
+            message=r".*MDAnalysis\.topology\.tables has been moved to MDAnalysis\.guesser\.tables.*",
+            category=DeprecationWarning,
+        )
+        warnings.filterwarnings(
+            "ignore",
+            message=r".*The 'HBDonor' interaction has been superseded.*",
+            category=UserWarning,
+        )
+        warnings.filterwarnings(
+            "ignore",
+            message=r".*The 'Anionic' interaction has been superseded.*",
+            category=UserWarning,
+        )
+        warnings.filterwarnings(
+            "ignore",
+            message=r".*The 'PiCation' interaction has been superseded.*",
+            category=UserWarning,
+        )
+        import prolif as plf
 
-    prot_rd = Chem.MolFromPDBFile(str(pdb_path), removeHs=False, sanitize=False)
-    if prot_rd is None:
-        raise RuntimeError(f"Could not parse receptor PDB with RDKit: {pdb_path}")
+        prot_rd = Chem.MolFromPDBFile(str(pdb_path), removeHs=False, sanitize=False)
+        if prot_rd is None:
+            raise RuntimeError(f"Could not parse receptor PDB with RDKit: {pdb_path}")
 
-    ligands_rd = _iter_ligands_from_sdf(sdf_path, max_poses=max_poses)
-    if not ligands_rd:
-        raise RuntimeError(f"No valid ligand poses found in SDF: {sdf_path}")
+        ligands_rd = _iter_ligands_from_sdf(sdf_path, max_poses=max_poses)
+        if not ligands_rd:
+            raise RuntimeError(f"No valid ligand poses found in SDF: {sdf_path}")
 
-    prot = plf.Molecule.from_rdkit(prot_rd)
-    ligands = [plf.Molecule.from_rdkit(m) for m in ligands_rd]
-    fp = plf.Fingerprint()
-    fp.run_from_iterable(ligands, prot)
+        prot = plf.Molecule.from_rdkit(prot_rd)
+        ligands = [plf.Molecule.from_rdkit(m) for m in ligands_rd]
+        fp = plf.Fingerprint()
+        fp.run_from_iterable(ligands, prot)
 
     ifp = getattr(fp, "ifp", None)
     if not ifp:
