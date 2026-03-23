@@ -778,6 +778,7 @@ def main() -> int:
             "tags": tags,
             "ligand_contact": bool(dist is not None and dist <= 5.0) or ("pdbe_ligand_contact" in tags),
             "functional_site": bool(functional_site),
+            "proxy_functional_site": False,
             "functional_reasons": functional_reasons,
             "evolution_conservation": evo_cons,
             "evolution_allowed_aas": (curated.get("evolution") or {}).get("allowed_aas") or [],
@@ -808,7 +809,7 @@ def main() -> int:
                 pos = int(card.get("pos") or 0)
                 if pos not in proxy_set:
                     continue
-                card["functional_site"] = True
+                card["proxy_functional_site"] = True
                 reasons = set(card.get("functional_reasons") or [])
                 reasons.add("proxy:ligand_geometry")
                 if bool(card.get("ligand_contact")):
@@ -856,6 +857,8 @@ def main() -> int:
             reasons.append("ligand_shell_outside_8A")
         if card.get("functional_site"):
             reasons.append("functional_annotation")
+        elif card.get("proxy_functional_site"):
+            reasons.append("proxy_functional_site")
         if d_func is not None and d_func < 1.0:
             reasons.append("near_functional_site")
         if exp is not None and exp < 0.15:

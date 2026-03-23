@@ -4,6 +4,7 @@ import os
 import re
 import shutil
 import subprocess
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -67,10 +68,35 @@ def _read_json(path: Path) -> Dict:
     return data if isinstance(data, dict) else {}
 
 
-def _http_get_bytes(url: str, timeout: int = 60) -> bytes:
-    req = Request(url, headers={"User-Agent": "ProteinVariantTriage/1.0"})
-    with urlopen(req, timeout=timeout) as resp:
-        return resp.read()
+def _http_get_bytes(url: str, timeout: int = 60, retries: int = 5, backoff_sec: float = 2.0) -> bytes:
+    last_exc = None
+    for attempt in range(max(1, int(retries))):
+        try:
+            req = Request(url, headers={"User-Agent": "ProteinVariantTriage/1.0"})
+            with urlopen(req, timeout=timeout) as resp:
+                return resp.read()
+        except HTTPError as e:
+            last_exc = e
+            if e.code not in {408, 425, 429, 500, 502, 503, 504} or attempt + 1 >= int(retries):
+                raise
+            retry_after = e.headers.get("Retry-After") if getattr(e, "headers", None) else None
+        except (URLError, TimeoutError, ValueError) as e:
+            last_exc = e
+            if attempt + 1 >= int(retries):
+                raise
+            retry_after = None
+
+        delay = float(backoff_sec) * (2 ** attempt)
+        if retry_after:
+            try:
+                delay = max(delay, float(retry_after))
+            except Exception:
+                pass
+        time.sleep(delay)
+
+    if last_exc is not None:
+        raise last_exc
+    raise RuntimeError(f"Failed to fetch URL: {url}")
 
 
 def _http_get_json(url: str, timeout: int = 60) -> Dict:

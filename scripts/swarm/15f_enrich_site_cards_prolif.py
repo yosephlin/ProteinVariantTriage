@@ -34,6 +34,16 @@ def _save_site_cards(path: Path, rows: List[Dict]) -> None:
             fh.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
+def _load_docking_summary(path: Path) -> Dict:
+    if not path.exists():
+        return {}
+    try:
+        obj = json.loads(path.read_text())
+    except Exception:
+        return {}
+    return obj if isinstance(obj, dict) else {}
+
+
 def _norm_chain(chain: Optional[str]) -> str:
     c = (chain or "").strip()
     return c if c else "A"
@@ -207,6 +217,7 @@ def main() -> int:
     ap.add_argument("--poses-sdf", default=None)
     ap.add_argument("--out", default=None, help="Output site_cards path (default: overwrite input).")
     ap.add_argument("--features-out", default=None, help="Optional residue-level ProLIF feature JSON output.")
+    ap.add_argument("--docking-summary", default=None, help="Optional docking_summary.json for pose-cluster metadata.")
     ap.add_argument("--max-poses", type=int, default=30)
     ap.add_argument("--tag-threshold", type=float, default=0.2, help="Tag residue as prolif_contact if contact_freq >= threshold.")
     args = ap.parse_args()
@@ -216,6 +227,7 @@ def main() -> int:
     out_path = Path(args.out) if args.out else site_cards_path
     pdb_path = resolve_canonical_protein_pdb(outdir, explicit=(Path(args.pdb) if args.pdb else None))
     sdf_path = resolve_docking_pose_sdf(outdir, explicit=(Path(args.poses_sdf) if args.poses_sdf else None))
+    docking_summary_path = Path(args.docking_summary) if args.docking_summary else outdir / "docking_summary.json"
 
     if not site_cards_path.exists():
         raise SystemExit(f"ERROR: site_cards not found: {site_cards_path}")
@@ -232,6 +244,11 @@ def main() -> int:
         ) from e
 
     cards = _load_site_cards(site_cards_path)
+    docking_summary = _load_docking_summary(docking_summary_path)
+    top_cluster_reps = docking_summary.get("top_cluster_representatives") or []
+    cluster_count = len(top_cluster_reps) if isinstance(top_cluster_reps, list) else 0
+    primary_pose_idx = docking_summary.get("primary_pose_idx")
+    score_backend = str(docking_summary.get("score_backend") or "").strip().lower() or None
     card_keys = {(_norm_chain(c.get("chain")), int(c.get("pos"))) for c in cards if c.get("pos") is not None}
     feature_keys = set(features.keys())
     overlap_keys = card_keys.intersection(feature_keys)
@@ -248,14 +265,33 @@ def main() -> int:
     for card in cards:
         key = (_norm_chain(card.get("chain")), int(card.get("pos")))
         feat = features.get(key)
+        contact_freq = 0.0
+        contact_pose_count = 0
+        top_interactions: List[str] = []
         if not feat:
-            continue
-        card["prolif"] = feat
+            feat = {}
+        else:
+            contact_freq = float(feat.get("contact_freq") or 0.0)
+            contact_pose_count = int(feat.get("contact_pose_count") or 0)
+            top_interactions = list(feat.get("top_interactions") or [])
+            card["prolif"] = feat
         tags = list(card.get("tags") or [])
-        if feat.get("contact_freq", 0.0) >= args.tag_threshold and "prolif_contact" not in tags:
+        if contact_freq >= args.tag_threshold and "prolif_contact" not in tags:
             tags.append("prolif_contact")
         card["tags"] = tags
-        updated += 1
+        # Multi-pose ligand support is a softer signal than binary contact from the
+        # single selected docking pose. Carry both forward so generation can treat
+        # sparse or unstable pose support cautiously instead of as a hard fact.
+        card["ligand_pose_support"] = round(contact_freq, 6)
+        card["ligand_pose_contact_count"] = int(contact_pose_count)
+        card["ligand_pose_total"] = int(nposes)
+        card["ligand_pose_uncertainty"] = round(1.0 - contact_freq, 6)
+        card["ligand_pose_top_interactions"] = top_interactions[:4]
+        card["docking_pose_backend"] = score_backend or card.get("docking_pose_backend")
+        card["docking_cluster_representative_count"] = int(cluster_count)
+        card["docking_primary_pose_idx"] = primary_pose_idx if primary_pose_idx is not None else card.get("docking_primary_pose_idx")
+        if key in features:
+            updated += 1
 
     _save_site_cards(out_path, cards)
 
